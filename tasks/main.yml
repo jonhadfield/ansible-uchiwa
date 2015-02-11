@@ -1,0 +1,90 @@
+---
+
+- name: online install | download uchiwa (Ubuntu)
+  get_url: url=http://dl.bintray.com/palourde/uchiwa/uchiwa_{{ uchiwa_version }}_{{ uchiwa_architecture }}.deb dest=/var/tmp/uchiwa_{{ uchiwa_version }}_{{ uchiwa_architecture }}.deb
+  when: uchiwa_online_install and (ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu')
+- name: online install | install uchiwa (Ubuntu)
+  apt: deb=/var/tmp/uchiwa_{{ uchiwa_version }}_{{ uchiwa_architecture }}.deb state=present
+  when: uchiwa_online_install and (ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu')
+
+- name: online install | download uchiwa (EL)
+  yum: name=http://dl.bintray.com/palourde/uchiwa/uchiwa-{{ uchiwa_version }}.{{ uchiwa_architecture }}.rpm dest=/var/tmp/uchiwa-{{ uchiwa_version }}.tar.gz
+  when: uchiwa_online_install and (ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux')
+
+# Offline Install
+- name: offline install | copy and extract uchiwa installation
+  unarchive: src={{ uchiwa_installer_path }} dest={{ uchiwa_base_install_dir }}/ mode=0700 creates={{ uchiwa_base_install_dir }}/uchiwa-{{ uchiwa_version }}/index.html
+  when: not uchiwa_online_install
+
+# Configure uchiwa
+- name: configure uchiwa
+  template: src=uchiwa.json.j2 dest=/etc/sensu/uchiwa.json owner=root group=root
+  notify: restart uchiwa
+
+# Start Uchiwa and ensure enabled
+- name: start and enable Uchiwa
+  service: name=uchiwa state=started enabled=true
+
+# Set permissions for uchiwa dir
+#- name: grant directory permissions to nginx user for uchiwa installation directory
+#  file: path={{ uchiwa_base_install_dir }}/uchiwa mode=0755 recurse=true
+
+# Configure nginx for uchiwa
+- name: install uchiwa virtual server configuration
+  template: src=uchiwa.conf.j2 dest={{ nginx_base_install_dir }}/nginx/conf/servers/uchiwa.conf owner=nginx group=nginx
+  notify:
+  - restart nginx
+
+# Add Diffe-Hellman param
+- name: add dhparam
+  copy: src=dhparam.pem dest={{ nginx_base_install_dir }}/nginx/conf/ssl/dhparam.pem owner=nginx group=nginx
+
+# _Configure uchiwa access_
+
+# Remove existing users to ensure only current users remain 
+# Set uchiwa_purge_htpasswd=true in vars or at runtime with: --extra-vars="uchiwa_purge_htpasswd=true"
+- name: purge users
+  file: path={{ nginx_base_install_dir }}/nginx/conf/servers/{{ item  }} state=absent
+  with_items:
+    - uchiwa.htpasswd
+  when: uchiwa_purge_htpasswd
+
+# Implement uchiwa access using htpasswd module (Requires: python-passlib on managed nodes)
+- name: configure admin users using htpasswd module
+  htpasswd: path={{ nginx_base_install_dir }}/nginx/conf/servers/uchiwa.htpasswd  name={{ item.value.username }} password={{ item.value.password }} owner=nginx group=nginx mode=0640
+  with_dict: uchiwa_web_users
+  when: uchiwa_web_users
+
+# Implement uchiwa access using pre-built htpasswd files
+- name: copy pre-built uchiwa htpasswd files
+  copy: src={{ uchiwa_htpasswd_files_path }}/{{ item }} dest={{ nginx_base_install_dir }}/nginx/conf/servers/{{ item }} owner=nginx group=nginx mode=0640
+  when: uchiwa_htpasswd_files_path|default(None) != None
+
+# Install custom key
+- name: install custom uchiwa key 
+  template: src=uchiwa.key.j2 dest={{ nginx_base_install_dir }}/nginx/conf/ssl/uchiwa.key owner=nginx group=nginx mode=0600
+  when: uchiwa_key is defined
+  notify:
+  - restart nginx
+
+# Install custom cert
+- name: install custom uchiwa certificate
+  template: src=uchiwa.crt.j2 dest={{ nginx_base_install_dir }}/nginx/conf/ssl/uchiwa.crt owner=nginx group=nginx mode=0600
+  when: uchiwa_cert is defined
+  notify:
+  - restart nginx
+
+# Install ssl certificate and key to secure uchiwa traffic
+- name: install example uchiwa server certificate and key
+  copy: src={{ item }} dest={{ nginx_base_install_dir }}/nginx/conf/ssl/{{ item }} owner=nginx group=nginx
+  with_items:
+    - uchiwa.crt
+    - uchiwa.key
+  notify:
+    - restart nginx
+  when: uchiwa_cert is not defined
+  
+# Install healthcheck response file for monitoring
+- name: install uchiwa healthcheck file
+  template: src=healthcheck.html.j2 dest={{ nginx_base_install_dir }}/nginx/html/{{ uchiwa_healthcheck_file }} owner=nginx group=nginx
+  when: uchiwa_healthcheck_url is defined

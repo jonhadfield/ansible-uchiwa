@@ -1,0 +1,19 @@
+{
+  "sensu": [
+    {
+      "name": "{{ uchiwa_sensu_name }}",
+      "host": "{{ uchiwa_sensu_host }}",
+      "user": "{{ uchiwa_sensu_user or '' }}",
+      "pass": "{{ uchiwa_sensu_password or '' }}",
+      "port": {{ uchiwa_sensu_port }},
+      "timeout": {{ uchiwa_sensu_timeout }}
+    }
+  ],
+  "uchiwa": {
+    "host": "{{ uchiwa_host }}",
+    "port": {{ uchiwa_port }},
+    "user": "{{ uchiwa_user or '' }}",
+    "pass": "{{ uchiwa_password or '' }}",
+    "interval": {{ uchiwa_refresh or 5 }}
+  }
+}

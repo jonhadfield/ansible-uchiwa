@@ -1,0 +1,28 @@
+---
+uchiwa_online_install: true
+uchiwa_installer_path: /tmp/uchiwa-0.4.1-1.x86_64.rpm
+uchiwa_version: 0.4.1-1
+uchiwa_architecture: x86_64
+uchiwa_sensu_name: sensu 
+uchiwa_sensu_host: localhost
+uchiwa_sensu_port: 4567
+uchiwa_sensu_ssl: false
+uchiwa_sensu_insecure: false
+uchiwa_sensu_path:
+uchiwa_sensu_timeout: 5
+uchiwa_sensu_user: admin
+uchiwa_sensu_password: secret
+uchiwa_host: 0.0.0.0
+uchiwa_port: 3000
+uchiwa_user: 
+uchiwa_password:
+uchiwa_refresh:
+uchiwa_healthcheck_file:
+uchiwa_healthcheck_content:
+uchiwa_htpasswd_files_path:
+uchiwa_htpasswd_files_path:
+uchiwa_purge_htpasswd: false
+uchiwa_web_users:
+  guest:
+    username: guest
+    password: password
