@@ -7,8 +7,8 @@
   apt: deb=/var/tmp/uchiwa_{{ uchiwa_version }}_{{ uchiwa_architecture }}.deb state=present
   when: uchiwa_online_install and (ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu')
 
-- name: online install | download uchiwa (EL)
-  yum: name=http://dl.bintray.com/palourde/uchiwa/uchiwa-{{ uchiwa_version }}.{{ uchiwa_architecture }}.rpm dest=/var/tmp/uchiwa-{{ uchiwa_version }}.tar.gz
+- name: online install | download and install uchiwa (EL)
+  yum: name=http://dl.bintray.com/palourde/uchiwa/uchiwa-{{ uchiwa_version }}.{{ uchiwa_architecture }}.rpm
   when: uchiwa_online_install and (ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux')
 
 # Offline Install
